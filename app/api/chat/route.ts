@@ -1,15 +1,16 @@
-import { getServerDb } from "@/lib/firebase-server"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, limit, getDocs, addDoc, doc, getDoc } from "firebase/firestore"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 // Get chat messages
 export async function GET() {
   try {
-    const db = getServerDb()
-    const chatRef = db.collection("globalChat")
-    const snapshot = await chatRef.orderBy("timestamp", "desc").limit(100).get()
+    const chatRef = collection(db, "globalChat")
+    const q = query(chatRef, orderBy("timestamp", "desc"), limit(100))
+    const messagesSnapshot = await getDocs(q)
 
-    const messages = snapshot.docs.map((doc) => ({
+    const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }))
@@ -37,12 +38,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Message content required" }, { status: 400 })
     }
 
-    const db = getServerDb()
-
     // Get user data
-    const userDoc = await db.collection("users").doc(userId).get()
+    const userRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userRef)
 
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -57,7 +57,8 @@ export async function POST(request: Request) {
       timestamp: Date.now(),
     }
 
-    const messageRef = await db.collection("globalChat").add(messageData)
+    const chatRef = collection(db, "globalChat")
+    const messageRef = await addDoc(chatRef, messageData)
 
     return NextResponse.json({
       success: true,

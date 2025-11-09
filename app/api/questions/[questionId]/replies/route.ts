@@ -1,16 +1,17 @@
-import { getServerDb } from "@/lib/firebase-server"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, getDocs, addDoc } from "firebase/firestore"
 import { NextResponse } from "next/server"
 
 // Get replies for a question
 export async function GET(request: Request, { params }: { params: Promise<{ questionId: string }> }) {
   try {
     const { questionId } = await params
-    const db = getServerDb()
 
-    const repliesRef = db.collection("questions").doc(questionId).collection("replies")
-    const snapshot = await repliesRef.orderBy("timestamp", "asc").get()
+    const repliesRef = collection(db, "questions", questionId, "replies")
+    const q = query(repliesRef, orderBy("timestamp", "asc"))
+    const repliesSnapshot = await getDocs(q)
 
-    const replies = snapshot.docs.map((doc) => ({
+    const replies = repliesSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }))
@@ -32,8 +33,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ que
       return NextResponse.json({ error: "Reply content required" }, { status: 400 })
     }
 
-    const db = getServerDb()
-
     // Create reply
     const replyData = {
       content: content.trim(),
@@ -41,7 +40,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ que
       timestamp: Date.now(),
     }
 
-    const replyRef = await db.collection("questions").doc(questionId).collection("replies").add(replyData)
+    const repliesRef = collection(db, "questions", questionId, "replies")
+    const replyRef = await addDoc(repliesRef, replyData)
 
     return NextResponse.json({
       success: true,

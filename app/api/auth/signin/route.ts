@@ -1,6 +1,7 @@
-import { getServerDb } from "@/lib/firebase-server"
-import { NextResponse } from "next/server"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, doc, getDoc, setDoc } from "firebase/firestore"
 import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
@@ -10,28 +11,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const db = getServerDb()
-    const usersRef = db.collection("users")
-    const q = usersRef.where("username", "==", username)
-    const usersSnapshot = await q.get()
+    // Check if username is already taken
+    const usersRef = collection(db, "users")
+    const q = query(usersRef, where("username", "==", username))
+    const usersSnapshot = await getDocs(q)
 
     if (!usersSnapshot.empty && usersSnapshot.docs[0].id !== userId) {
       return NextResponse.json({ error: "Username already taken" }, { status: 400 })
     }
 
     // Create or update user in Firestore
-    const userRef = db.collection("users").doc(userId)
-    const userDoc = await userRef.get()
+    const userRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userRef)
 
     const userData = {
       uid: userId,
       username,
       profilePicture: profilePicture || "",
-      createdAt: userDoc.exists ? userDoc.data()?.createdAt : Date.now(),
+      createdAt: userDoc.exists() ? userDoc.data()?.createdAt : Date.now(),
       updatedAt: Date.now(),
     }
 
-    await userRef.set(userData, { merge: true })
+    await setDoc(userRef, userData, { merge: true })
 
     // Set session cookie
     const cookieStore = await cookies()
