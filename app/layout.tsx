@@ -10,13 +10,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AnonNote - Get Honest Notes Anonymously",
+  title: "ANOTE - Get Honest Notes Anonymously",
   description: "Receive anonymous messages from your friends",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "AnonNote",
+    title: "ANOTE",
   },
   icons: {
     icon: [
