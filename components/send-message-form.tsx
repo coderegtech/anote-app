@@ -9,6 +9,8 @@ import type React from "react"
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { User } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { collection, addDoc } from "firebase/firestore"
 
 export default function SendMessageForm({
   userId,
@@ -39,17 +41,12 @@ export default function SendMessageForm({
     setSending(true)
 
     try {
-      const response = await fetch(`/api/messages/${userId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: message }),
+      await addDoc(collection(db, "messages"), {
+        recipientId: userId,
+        content: message.trim(),
+        timestamp: Date.now(),
+        read: false,
       })
-
-      if (!response.ok) {
-        throw new Error("Failed to send message")
-      }
 
       toast({
         title: "Message Sent!",

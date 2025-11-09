@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { MessageCircle, Send, User } from "lucide-react"
 import { useEffect, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, increment } from "firebase/firestore"
 
 interface Question {
   id: string
@@ -30,7 +32,15 @@ interface Reply {
   timestamp: number
 }
 
-export default function QuestionsFeed() {
+export default function QuestionsFeed({
+  currentUserId,
+  currentUsername,
+  currentProfilePicture,
+}: {
+  currentUserId: string
+  currentUsername: string
+  currentProfilePicture?: string
+}) {
   const { toast } = useToast()
   const [questions, setQuestions] = useState<Question[]>([])
   const [newQuestion, setNewQuestion] = useState("")
@@ -40,22 +50,24 @@ export default function QuestionsFeed() {
   const [newReply, setNewReply] = useState("")
   const [replyUsername, setReplyUsername] = useState("")
 
-  const fetchQuestions = async () => {
-    try {
-      const res = await fetch("/api/questions")
-      if (res.ok) {
-        const data = await res.json()
-        setQuestions(data.questions || [])
-      }
-    } catch (error) {
-      console.error("[v0] Failed to fetch questions:", error)
-    }
-  }
-
   useEffect(() => {
-    fetchQuestions()
-    const interval = setInterval(fetchQuestions, 5000)
-    return () => clearInterval(interval)
+    const questionsRef = collection(db, "questions")
+    const q = query(questionsRef, orderBy("timestamp", "desc"))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const qs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        userId: doc.data().userId,
+        username: doc.data().username,
+        profilePicture: doc.data().profilePicture,
+        content: doc.data().content,
+        timestamp: doc.data().timestamp,
+        replyCount: doc.data().replyCount || 0,
+      }))
+      setQuestions(qs)
+    })
+
+    return () => unsubscribe()
   }, [])
 
   const handlePostQuestion = async (e: React.FormEvent) => {
@@ -64,37 +76,41 @@ export default function QuestionsFeed() {
 
     setLoading(true)
     try {
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newQuestion }),
+      await addDoc(collection(db, "questions"), {
+        userId: currentUserId,
+        username: currentUsername,
+        profilePicture: currentProfilePicture || "",
+        content: newQuestion.trim(),
+        timestamp: Date.now(),
+        replyCount: 0,
       })
-
-      if (res.ok) {
-        setNewQuestion("")
-        fetchQuestions()
-        toast({
-          title: "Question posted!",
-          description: "Your question is now public",
-        })
-      }
+      setNewQuestion("")
+      toast({
+        title: "Question posted!",
+        description: "Your question is now public",
+      })
     } catch (error) {
-      console.error("[v0] Failed to post question:", error)
+      console.error("Failed to post question:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchReplies = async (questionId: string) => {
-    try {
-      const res = await fetch(`/api/questions/${questionId}/replies`)
-      if (res.ok) {
-        const data = await res.json()
-        setReplies(data.replies || [])
-      }
-    } catch (error) {
-      console.error("[v0] Failed to fetch replies:", error)
-    }
+  const fetchReplies = (questionId: string) => {
+    const repliesRef = collection(db, "questions", questionId, "replies")
+    const q = query(repliesRef, orderBy("timestamp", "asc"))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reps = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        content: doc.data().content,
+        username: doc.data().username,
+        timestamp: doc.data().timestamp,
+      }))
+      setReplies(reps)
+    })
+
+    return unsubscribe
   }
 
   const handleQuestionClick = (question: Question) => {
@@ -107,27 +123,27 @@ export default function QuestionsFeed() {
     if (!newReply.trim() || !selectedQuestion) return
 
     try {
-      const res = await fetch(`/api/questions/${selectedQuestion.id}/replies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: newReply,
-          username: replyUsername.trim() || "Anonymous",
-        }),
+      const repliesRef = collection(db, "questions", selectedQuestion.id, "replies")
+      await addDoc(repliesRef, {
+        content: newReply.trim(),
+        username: replyUsername.trim() || "Anonymous",
+        timestamp: Date.now(),
       })
 
-      if (res.ok) {
-        setNewReply("")
-        setReplyUsername("")
-        fetchReplies(selectedQuestion.id)
-        fetchQuestions()
-        toast({
-          title: "Reply posted!",
-          description: "Your reply has been added",
-        })
-      }
+      // Update reply count
+      const questionRef = doc(db, "questions", selectedQuestion.id)
+      await updateDoc(questionRef, {
+        replyCount: increment(1),
+      })
+
+      setNewReply("")
+      setReplyUsername("")
+      toast({
+        title: "Reply posted!",
+        description: "Your reply has been added",
+      })
     } catch (error) {
-      console.error("[v0] Failed to post reply:", error)
+      console.error("Failed to post reply:", error)
     }
   }
 

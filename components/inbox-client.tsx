@@ -5,17 +5,21 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Copy, LogOut, MessageSquare, User } from "lucide-react"
+import { Copy, LogOut, MessageSquare, User, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import GlobalChat from "./global-chat"
 import QuestionsFeed from "./questions-feed"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore"
+import { signOut } from "firebase/auth"
 
 interface Message {
   id: string
-  text: string
+  content: string
   timestamp: number
+  read: boolean
 }
 
 export default function InboxClient({
@@ -38,23 +42,22 @@ export default function InboxClient({
   const editableRef = useRef<HTMLDivElement>(null)
   const shareLink = `${typeof window !== "undefined" ? window.location.origin : ""}/u/${username}`
 
-  // Fetch inbox messages
-  const fetchMessages = async () => {
-    try {
-      const res = await fetch(`/api/messages/${userId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setMessages(data.messages || [])
-      }
-    } catch (err) {
-      console.error("[v0] Failed to fetch messages:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    fetchMessages()
+    const messagesRef = collection(db, "messages")
+    const q = query(messagesRef, where("recipientId", "==", userId), orderBy("timestamp", "desc"))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        content: doc.data().content,
+        timestamp: doc.data().timestamp,
+        read: doc.data().read,
+      }))
+      setMessages(msgs)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [userId])
 
   // Copy or share link
@@ -79,8 +82,32 @@ export default function InboxClient({
   }
 
   const handleSignOut = async () => {
-    await fetch("/api/auth/signout", { method: "POST" })
-    router.push("/auth")
+    try {
+      await signOut(auth)
+      router.push("/auth")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await deleteDoc(doc(db, "messages", messageId))
+      toast({
+        title: "Message deleted",
+        description: "The message has been removed",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
+        variant: "destructive",
+      })
+    }
   }
 
   // Editable custom question
@@ -142,9 +169,20 @@ export default function InboxClient({
     return (
       <div className="space-y-4 max-w-md mx-auto">
         {messages.map((msg) => (
-          <Card key={msg.id} className="p-5 shadow-sm hover:shadow-md transition-shadow rounded-2xl border-gray-200">
-            <p className="text-gray-800 leading-relaxed">{msg.text}</p>
+          <Card
+            key={msg.id}
+            className="p-5 shadow-sm hover:shadow-md transition-shadow rounded-2xl border-gray-200 relative group"
+          >
+            <p className="text-gray-800 leading-relaxed pr-8">{msg.content}</p>
             <p className="text-xs text-gray-400 mt-3">{new Date(msg.timestamp).toLocaleDateString()}</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDeleteMessage(msg.id)}
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </Card>
         ))}
       </div>
@@ -226,8 +264,12 @@ export default function InboxClient({
       <div className="flex-1 px-6 py-8">
         {activeTab === "play" && <PlaySection />}
         {activeTab === "inbox" && <InboxMessages />}
-        {activeTab === "chat" && <GlobalChat currentUserId={userId} />}
-        {activeTab === "questions" && <QuestionsFeed />}
+        {activeTab === "chat" && (
+          <GlobalChat currentUserId={userId} currentUsername={username} currentProfilePicture={profilePicture} />
+        )}
+        {activeTab === "questions" && (
+          <QuestionsFeed currentUserId={userId} currentUsername={username} currentProfilePicture={profilePicture} />
+        )}
       </div>
     </div>
   )

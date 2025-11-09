@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, addDoc, query, orderBy, limit, onSnapshot } from "firebase/firestore"
 
 interface ChatMessage {
   id: string
@@ -18,29 +20,37 @@ interface ChatMessage {
   timestamp: number
 }
 
-export default function GlobalChat({ currentUserId }: { currentUserId: string }) {
+export default function GlobalChat({
+  currentUserId,
+  currentUsername,
+  currentProfilePicture,
+}: {
+  currentUserId: string
+  currentUsername: string
+  currentProfilePicture?: string
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const fetchMessages = async () => {
-    try {
-      const res = await fetch("/api/chat")
-      if (res.ok) {
-        const data = await res.json()
-        setMessages(data.messages || [])
-      }
-    } catch (error) {
-      console.error("[v0] Failed to fetch chat messages:", error)
-    }
-  }
-
   useEffect(() => {
-    fetchMessages()
-    // Poll for new messages every 3 seconds
-    const interval = setInterval(fetchMessages, 3000)
-    return () => clearInterval(interval)
+    const chatRef = collection(db, "chat")
+    const q = query(chatRef, orderBy("timestamp", "asc"), limit(100))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        userId: doc.data().userId,
+        username: doc.data().username,
+        profilePicture: doc.data().profilePicture,
+        content: doc.data().content,
+        timestamp: doc.data().timestamp,
+      }))
+      setMessages(msgs)
+    })
+
+    return () => unsubscribe()
   }, [])
 
   useEffect(() => {
@@ -56,18 +66,16 @@ export default function GlobalChat({ currentUserId }: { currentUserId: string })
 
     setLoading(true)
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage }),
+      await addDoc(collection(db, "chat"), {
+        userId: currentUserId,
+        username: currentUsername,
+        profilePicture: currentProfilePicture || "",
+        content: newMessage.trim(),
+        timestamp: Date.now(),
       })
-
-      if (res.ok) {
-        setNewMessage("")
-        fetchMessages()
-      }
+      setNewMessage("")
     } catch (error) {
-      console.error("[v0] Failed to send message:", error)
+      console.error("Failed to send message:", error)
     } finally {
       setLoading(false)
     }

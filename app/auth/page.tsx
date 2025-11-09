@@ -9,7 +9,8 @@ import { ArrowLeft, User } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useRef } from "react"
-import { auth, signInAnonymously } from "@/lib/firebase"
+import { auth, db, signInAnonymously } from "@/lib/firebase"
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore"
 
 export default function AuthPage() {
   const router = useRouter()
@@ -25,6 +26,13 @@ export default function AuthPage() {
     setStep("username")
   }
 
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
+    const usersRef = collection(db, "users")
+    const q = query(usersRef, where("username", "==", username))
+    const snapshot = await getDocs(q)
+    return !snapshot.empty
+  }
+
   const handleUsernameSubmit = async () => {
     if (!username.trim()) {
       toast({
@@ -35,7 +43,28 @@ export default function AuthPage() {
       return
     }
 
-    setStep("profile")
+    setLoading(true)
+    try {
+      const exists = await checkUsernameExists(username.trim())
+      if (exists) {
+        toast({
+          title: "Username Taken",
+          description: "This username is already in use. Please choose another.",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+      setStep("profile")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check username. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSkipProfile = async () => {
@@ -58,7 +87,7 @@ export default function AuthPage() {
     setLoading(true)
     try {
       const userCredential = await signInAnonymously(auth)
-      const idToken = await userCredential.user.getIdToken()
+      const userId = userCredential.user.uid
 
       let profileUrl = ""
       if (profileFile) {
@@ -76,21 +105,13 @@ export default function AuthPage() {
         }
       }
 
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idToken,
-          username: username.trim(),
-          profilePicture: profileUrl,
-        }),
+      await setDoc(doc(db, "users", userId), {
+        uid: userId,
+        username: username.trim(),
+        profilePicture: profileUrl,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Signup failed")
-      }
 
       toast({
         title: "Welcome!",
@@ -99,7 +120,7 @@ export default function AuthPage() {
 
       router.push("/inbox")
     } catch (error: any) {
-      console.error("[v0] Signup error:", error)
+      console.error("Signup error:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to create account. Please try again.",
@@ -164,7 +185,7 @@ export default function AuthPage() {
           disabled={loading || !username.trim()}
           className="absolute bottom-20 left-1/2 -translate-x-1/2 w-80 h-14 text-lg font-semibold bg-white text-black hover:bg-white/90 rounded-full shadow-2xl disabled:opacity-50"
         >
-          Continue
+          {loading ? "Checking..." : "Continue"}
         </Button>
       </div>
     )
