@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
@@ -87,9 +86,9 @@ export default function SendMessageForm({
 
       setMessage("");
 
-      setTimeout(() => {
-        router.push("/auth");
-      }, 2000);
+      // setTimeout(() => {
+      //   router.push("/auth");
+      // }, 2000);
     } catch (error) {
       toast({
         title: "Error",
@@ -102,55 +101,51 @@ export default function SendMessageForm({
   };
 
   return (
-    <div className="min-h-screen gradient-bg flex flex-col items-center justify-between px-6 py-8">
-      <div className="w-full max-w-md pt-8">
-        <Card className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border-0">
-          <div className="flex items-start gap-3 mb-4">
-            <Avatar className="w-10 h-10 flex-shrink-0">
-              <AvatarImage
-                src={profilePicture || "/placeholder.svg"}
-                alt={username}
-              />
-              <AvatarFallback className="bg-gray-400">
-                <User className="w-5 h-5 text-white" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-1">
-              <p className="text-sm font-bold text-gray-900">@{username}</p>
-              <p className="text-sm font-bold text-gray-900">
-                {note || "Send me anonymous question!"}
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Hello world"
-              className="min-h-[100px] resize-none text-base border-0 rounded-2xl bg-gray-200 focus:bg-gray-200 text-black placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0"
-              maxLength={500}
-              disabled={sending}
+    <div className="min-h-screen bg-gradient-to-b from-pink-500 to-red-400 flex flex-col items-center justify-between px-6 py-8">
+      <div className="w-full max-w-xl pt-8">
+        <div className="bg-white/95 flex items-start gap-3 p-4 rounded-t-2xl shadow-2xl">
+          <Avatar className="w-12 h-12 flex-shrink-0">
+            <AvatarImage
+              src={profilePicture || "/placeholder.svg"}
+              alt={username}
             />
-          </form>
-        </Card>
+            <AvatarFallback className="bg-gray-400">
+              <User className="w-5 h-5 text-white" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <p className="text-base text-gray-900">@{username}</p>
+            <p className="text-base font-bold text-gray-900">{note}</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="w-full">
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="send message.."
+            className="min-h-32 p-4 text-base resize-none border-0 rounded-b-2xl rounded-t-none bg-pink-200 focus:bg-pink-200 text-black placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0"
+            maxLength={500}
+            disabled={sending}
+          />
+          {message && (
+            <Button
+              type="submit"
+              className="w-full h-14 rounded-full bg-black text-white hover:bg-black/90 font-bold text-lg shadow-2xl mt-4 flex items-center justify-center"
+            >
+              {sending ? "Sending..." : "Send!"}
+            </Button>
+          )}
+        </form>
       </div>
 
       <div className="w-full max-w-md space-y-4">
         <Button
-          onClick={handleSubmit}
-          disabled={sending || !message.trim()}
-          className="w-full h-14 rounded-full bg-black text-white hover:bg-black/90 font-bold text-lg shadow-2xl"
-        >
-          {sending ? "Sending..." : "Send"}
-        </Button>
-
-        <Button
           onClick={() => router.push("/auth")}
           variant="outline"
-          className="w-full h-14 rounded-full bg-black text-white hover:bg-black/90 font-bold text-lg shadow-2xl border-0"
+          className="w-full h-14 rounded-full bg-white text-black hover:bg-white font-bold text-lg shadow-2xl border-0"
         >
-          Get your messages!
+          Get your own messages!
         </Button>
       </div>
     </div>

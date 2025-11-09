@@ -1,6 +1,6 @@
 {
-  "name": "AnonNote - Anonymous Messages",
-  "short_name": "AnonNote",
+  "name": "anote - Anonymous Note",
+  "short_name": "anote",
   "description": "Receive anonymous messages from your friends",
   "start_url": "/",
   "display": "standalone",

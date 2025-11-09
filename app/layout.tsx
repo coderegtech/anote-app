@@ -1,18 +1,17 @@
-import { Toaster } from "@/components/ui/toaster"
-import { DataProvider } from "@/hooks/use-data"
-import { AuthProvider } from "@/lib/auth-context"
-import { Analytics } from "@vercel/analytics/next"
-import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
-import type React from "react"
-import "./globals.css"
+import { Toaster } from "@/components/ui/toaster";
+import { DataProvider } from "@/hooks/use-data";
+import { AuthProvider } from "@/lib/auth-context";
+import { Analytics } from "@vercel/analytics/next";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import type React from "react";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AnonNote - Get Honest Notes Anonymously",
   description: "Receive anonymous messages from your friends",
-  generator: "v0.app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -34,7 +33,7 @@ export const metadata: Metadata = {
     ],
     apple: "/icon-512.jpg",
   },
-}
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -43,12 +42,12 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: "#ff6b6b",
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -62,5 +61,5 @@ export default function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  )
+  );
 }

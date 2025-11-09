@@ -1,37 +1,44 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
-import { auth, db, signInAnonymously } from "@/lib/firebase"
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore"
-import { ArrowLeft, User } from "lucide-react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { useRef, useState } from "react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { auth, db, signInAnonymously } from "@/lib/firebase";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
+import { ArrowLeft, User } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 export default function AuthPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [step, setStep] = useState<"start" | "username" | "profile">("start")
-  const [loading, setLoading] = useState(false)
-  const [username, setUsername] = useState("")
-  const [profilePicture, setProfilePicture] = useState<string>("")
-  const [profileFile, setProfileFile] = useState<File | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [step, setStep] = useState<"start" | "username" | "profile">("start");
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string>("");
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGetStarted = () => {
-    setStep("username")
-  }
+    setStep("username");
+  };
 
   const checkUsernameExists = async (username: string): Promise<boolean> => {
-    const usersRef = collection(db, "users")
-    const q = query(usersRef, where("username", "==", username))
-    const snapshot = await getDocs(q)
-    return !snapshot.empty
-  }
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("username", "==", username));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  };
 
   const handleUsernameSubmit = async () => {
     if (!username.trim()) {
@@ -39,69 +46,70 @@ export default function AuthPage() {
         title: "Username Required",
         description: "Please enter a username to continue",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const exists = await checkUsernameExists(username.trim())
+      const exists = await checkUsernameExists(username.trim());
       if (exists) {
         toast({
           title: "Username Taken",
-          description: "This username is already in use. Please choose another.",
+          description:
+            "This username is already in use. Please choose another.",
           variant: "destructive",
-        })
-        setLoading(false)
-        return
+        });
+        setLoading(false);
+        return;
       }
-      setStep("profile")
+      setStep("profile");
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to check username. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSkipProfile = async () => {
-    await completeSignup()
-  }
+    await completeSignup();
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setProfileFile(file)
-      const reader = new FileReader()
+      setProfileFile(file);
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setProfilePicture(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+        setProfilePicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const completeSignup = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const userCredential = await signInAnonymously(auth)
-      const userId = userCredential.user.uid
+      const userCredential = await signInAnonymously(auth);
+      const userId = userCredential.user.uid;
 
-      let profileUrl = ""
+      let profileUrl = "";
       if (profileFile) {
-        const formData = new FormData()
-        formData.append("file", profileFile)
+        const formData = new FormData();
+        formData.append("file", profileFile);
 
         const uploadRes = await fetch("/api/upload-profile", {
           method: "POST",
           body: formData,
-        })
+        });
 
         if (uploadRes.ok) {
-          const { url } = await uploadRes.json()
-          profileUrl = url
+          const { url } = await uploadRes.json();
+          profileUrl = url;
         }
       }
 
@@ -111,29 +119,30 @@ export default function AuthPage() {
         profilePicture: profileUrl,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-      })
+      });
 
       toast({
         title: "Welcome!",
         description: "Your account has been created successfully",
-      })
+      });
 
-      router.push("/inbox")
+      router.push("/inbox");
     } catch (error: any) {
-      console.error("Signup error:", error)
+      console.error("Signup error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create account. Please try again.",
+        description:
+          error.message || "Failed to create account. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (step === "start") {
     return (
-      <div className="mobile-full-height min-h-screen gradient-bg flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <div className="mobile-full-height min-h-screen bg-gradient-to-b from-pink-500 to-red-400 flex flex-col items-center justify-center px-4 relative overflow-hidden">
         <h1 className="text-7xl sm:text-8xl md:text-9xl font-black text-white tracking-tighter drop-shadow-2xl italic">
           ANOTE
         </h1>
@@ -148,7 +157,7 @@ export default function AuthPage() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (step === "username") {
@@ -168,13 +177,17 @@ export default function AuthPage() {
 
         <div className="mt-20 flex flex-col items-center justify-center space-y-8 w-full">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-semibold text-white">Choose a username</h2>
+            <h2 className="text-2xl font-semibold text-white">
+              Choose a username
+            </h2>
           </div>
 
           <div className="w-full max-w-sm space-y-6">
             <Input
               value={"@" + username}
-              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+              onChange={(e) =>
+                setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))
+              }
               placeholder="@username"
               className="w-full h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 text-center text-lg rounded-xl"
               maxLength={20}
@@ -192,7 +205,7 @@ export default function AuthPage() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (step === "profile") {
@@ -233,7 +246,12 @@ export default function AuthPage() {
             onClick={() => fileInputRef.current?.click()}
           >
             {profilePicture ? (
-              <Image src={profilePicture || "/placeholder.svg"} alt="Profile" fill className="object-cover" />
+              <Image
+                src={profilePicture || "/placeholder.svg"}
+                alt="Profile"
+                fill
+                className="object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <User className="w-20 h-20 text-white/50" />
@@ -241,7 +259,13 @@ export default function AuthPage() {
             )}
           </div>
 
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </div>
 
         <div className="fixed bottom-8 left-4 right-4 max-w-md mx-auto">
@@ -250,12 +274,16 @@ export default function AuthPage() {
             disabled={loading}
             className="w-full h-14 text-lg font-semibold bg-white text-black hover:bg-white/90 rounded-xl shadow-2xl disabled:opacity-50"
           >
-            {loading ? "Creating account..." : profilePicture ? "Continue" : "Choose photo"}
+            {loading
+              ? "Creating account..."
+              : profilePicture
+              ? "Continue"
+              : "Choose photo"}
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }
