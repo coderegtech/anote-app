@@ -125,13 +125,32 @@
   }
 }
 
+.min-h-screen,
+.h-screen {
+  min-height: 100dvh !important;
+}
+
 /* Updated gradient backgrounds for mobile design */
 .gradient-bg {
-  background: linear-gradient(180deg, #ff6b6b 0%, #ee5a6f 25%, #c44569 50%, #a73d5f 75%, #8b3054 100%);
+  background: linear-gradient(
+    180deg,
+    #ff6b6b 0%,
+    #ee5a6f 25%,
+    #c44569 50%,
+    #a73d5f 75%,
+    #8b3054 100%
+  );
 }
 
 .gradient-bg-subtle {
-  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 25%, #e17055 50%, #d63031 75%, #e84393 100%);
+  background: linear-gradient(
+    135deg,
+    #ffeaa7 0%,
+    #fdcb6e 25%,
+    #e17055 50%,
+    #d63031 75%,
+    #e84393 100%
+  );
 }
 
 /* Mobile-specific responsive utilities */

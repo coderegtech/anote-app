@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useData } from "@/hooks/use-data";
@@ -19,12 +17,24 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { Copy, LogOut, MessageSquare, Plus, Trash2, User } from "lucide-react";
+import {
+  Camera,
+  Copy,
+  LogOut,
+  MessageSquare,
+  Plus,
+  Share,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import GlobalChat from "./global-chat";
 import QuestionsFeed from "./questions-feed";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Spinner } from "./ui/spinner";
 
 interface Message {
   id: string;
@@ -35,10 +45,12 @@ interface Message {
 }
 
 export default function InboxClient({
+  isloading,
   userId,
   username,
   profilePicture,
 }: {
+  isloading: boolean;
   userId: string;
   username: string;
   profilePicture?: string;
@@ -134,22 +146,18 @@ export default function InboxClient({
   };
 
   const saveNote = async (q: string) => {
+    if (!q.trim()) return;
     try {
-      await addDoc(collection(db, "notes"), {
+      await addDoc(collection(db, `users/${userId}/notes`), {
         uid: userId,
         username: username,
-        note: q,
+        note: q.trim(),
         timestamp: Date.now(),
       });
     } catch (error) {
-      console.log(error);
+      console.error("Error saving note:", error);
     }
   };
-
-  // auto save note
-  useEffect(() => {
-    saveNote(customNote);
-  }, [customNote]);
 
   // Editable custom question
   const EditableQuestion = () => {
@@ -200,6 +208,30 @@ export default function InboxClient({
 
   // Inbox message list
   const InboxMessages = () => {
+    const [shareNote, setShareNote] = useState<{
+      active: boolean;
+      data: Message | null;
+    }>({ active: false, data: null });
+    const sectionRef = useRef<HTMLDivElement>(null);
+
+    const handleScreenshot = async () => {
+      if (!sectionRef.current) return;
+
+      try {
+        toast({
+          title: "Alert!",
+          description: "Screenshot notes is under-development!",
+        });
+
+        // const link = document.createElement("a");
+        // link.href = "";
+        // link.download = `screentshot-${shareNote.data?.id}.png`;
+        // link.click();
+      } catch (error) {
+        console.error("Screenshot failed:", error);
+      }
+    };
+
     if (loading)
       return <div className="text-center py-12 text-gray-500">Loading...</div>;
 
@@ -214,6 +246,54 @@ export default function InboxClient({
         </div>
       );
 
+    if (shareNote.active && shareNote.data) {
+      return (
+        <div className="min-h-screen z-50 p-4 absolute inset-0 bg-white flex flex-col items-center justify-center">
+          <span
+            onClick={() => setShareNote({ active: false, data: null })}
+            className="absolute top-4 left-4"
+          >
+            <X className="size-6" />
+          </span>
+
+          <div
+            ref={sectionRef}
+            className="max-w-sm w-full flex  flex-col bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden shadow-2xl border-0 group relative"
+          >
+            <div className="px-14 bg-gradient-to-b from-pink-500 to-red-400 h-full p-4">
+              <p className="text-center text-white font-bold text-lg">
+                {shareNote.data?.note}
+              </p>
+            </div>
+            <div className="bg-white p-4">
+              <p className="text-gray-800 font-semibold text-center leading-relaxed">
+                {shareNote.data?.content}
+              </p>
+              <p className="text-xs text-gray-400 mt-3">
+                {new Date(shareNote.data?.timestamp).toLocaleDateString()}
+              </p>
+              <div className="flex">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteMessage(shareNote.data?.id!)}
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-white hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <span
+            onClick={handleScreenshot}
+            className="bg-neutral-300 rounded-full p-2 mt-8"
+          >
+            <Camera className="size-8 text-white" />
+          </span>
+        </div>
+      );
+    }
     return (
       <div className="space-y-4 max-w-md mx-auto">
         {messages.map((msg) => (
@@ -221,8 +301,8 @@ export default function InboxClient({
             key={msg.id}
             className="bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden shadow-2xl border-0 group relative"
           >
-            <div className="bg-gradient-to-b from-pink-500 to-red-400 h-full p-4">
-              <p className="text-center text-white font-bold text-base">
+            <div className="px-14 bg-gradient-to-b from-pink-500 to-red-400 h-full p-4">
+              <p className="text-center text-white font-bold text-lg">
                 {msg.note}
               </p>
             </div>
@@ -233,20 +313,32 @@ export default function InboxClient({
               <p className="text-xs text-gray-400 mt-3">
                 {new Date(msg.timestamp).toLocaleDateString()}
               </p>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteMessage(msg.id)}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-white hover:text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShareNote({ active: true, data: msg })}
+                  className="absolute bottom-2 right-12  text-white hover:text-red-700 hover:bg-red-50"
+                >
+                  <Share className="w-4 h-4 text-black" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteMessage(msg.id)}
+                  className="absolute bottom-2 right-3  text-white hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 text-black" />
+                </Button>
+              </div>
             </div>
           </div>
         ))}
       </div>
     );
   };
+
   const [profile, setProfile] = useState<string>("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -302,13 +394,19 @@ export default function InboxClient({
       <Card className="max-w-sm mx-auto bg-gradient-to-b from-pink-500 to-red-400 border-0 shadow-xl overflow-hidden rounded-2xl">
         <div className="p-8 flex flex-col items-center justify-center min-h-[240px] text-center space-y-4">
           <Avatar className="w-20 h-20">
-            <AvatarImage src={profile || profilePicture} alt={username} />
+            {isloading ? (
+              <Spinner className="size-12" />
+            ) : (
+              <AvatarImage src={profile || profilePicture} alt={username} />
+            )}
             <AvatarFallback
               onClick={() => fileInputRef.current?.click()}
               className="bg-white/20 backdrop-blur-sm cursor-pointer"
             >
               {isUploading ? (
-                <span className="text-white text-sm">Uploading...</span>
+                <span className="">
+                  <Spinner className="size-12" />
+                </span>
               ) : (
                 <>
                   <User className="text-white w-10 h-10" />

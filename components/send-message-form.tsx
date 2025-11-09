@@ -31,11 +31,11 @@ export default function SendMessageForm({
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState("send me anonymous message!");
 
   useEffect(() => {
     const fetchNoteText = async () => {
-      const usersRef = collection(db, "notes");
+      const usersRef = collection(db, `users/${userId}/notes`);
       const q = query(usersRef, where("username", "==", username), limit(1));
       const snapshot = await getDocs(q);
 

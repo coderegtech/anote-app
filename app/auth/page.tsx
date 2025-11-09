@@ -246,7 +246,7 @@ export default function AuthPage() {
           </div>
 
           <div
-            className="relative w-48 h-48 rounded-2xl bg-neutral-500 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+            className="relative w-48 h-48 rounded-full bg-neutral-500 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => fileInputRef.current?.click()}
           >
             {profilePicture ? (
