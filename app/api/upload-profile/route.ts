@@ -1,7 +1,6 @@
 import { put } from "@vercel/blob"
 import { NextResponse } from "next/server"
-import { db } from "@/lib/firebase"
-import { doc, updateDoc } from "firebase/firestore"
+import { getServerDb } from "@/lib/firebase-server"
 import { cookies } from "next/headers"
 
 export async function POST(request: Request) {
@@ -25,9 +24,10 @@ export async function POST(request: Request) {
       access: "public",
     })
 
+    const db = getServerDb()
+
     // Update user profile in Firestore
-    const userRef = doc(db, "users", userId)
-    await updateDoc(userRef, {
+    await db.collection("users").doc(userId).update({
       profilePicture: blob.url,
       updatedAt: Date.now(),
     })

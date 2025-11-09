@@ -1,16 +1,15 @@
-import { db } from "@/lib/firebase"
-import { collection, query, orderBy, limit, getDocs, addDoc } from "firebase/firestore"
+import { getServerDb } from "@/lib/firebase-server"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params
 
   try {
-    const messagesRef = collection(db, "users", userId, "messages")
-    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(50))
-    const messagesSnapshot = await getDocs(q)
+    const db = getServerDb()
+    const messagesRef = db.collection("users").doc(userId).collection("messages")
+    const snapshot = await messagesRef.orderBy("timestamp", "desc").limit(50).get()
 
-    const messages = messagesSnapshot.docs.map((doc) => ({
+    const messages = snapshot.docs.map((doc) => ({
       id: doc.id,
       text: doc.data().text,
       timestamp: doc.data().timestamp,
@@ -39,8 +38,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ use
       read: false,
     }
 
-    const messagesRef = collection(db, "users", userId, "messages")
-    const messageRef = await addDoc(messagesRef, messageData)
+    const db = getServerDb()
+    const messageRef = await db.collection("users").doc(userId).collection("messages").add(messageData)
 
     return NextResponse.json({ success: true, messageId: messageRef.id })
   } catch (error) {

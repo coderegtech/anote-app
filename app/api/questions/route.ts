@@ -1,22 +1,20 @@
-import { db } from "@/lib/firebase"
-import { collection, query, orderBy, limit, getDocs, addDoc, doc, getDoc } from "firebase/firestore"
+import { getServerDb } from "@/lib/firebase-server"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 // Get all public questions
 export async function GET() {
   try {
-    const questionsRef = collection(db, "questions")
-    const q = query(questionsRef, orderBy("timestamp", "desc"), limit(50))
-    const questionsSnapshot = await getDocs(q)
+    const db = getServerDb()
+    const questionsRef = db.collection("questions")
+    const snapshot = await questionsRef.orderBy("timestamp", "desc").limit(50).get()
 
     const questions = await Promise.all(
-      questionsSnapshot.docs.map(async (questionDoc) => {
+      snapshot.docs.map(async (questionDoc) => {
         const questionData = questionDoc.data()
 
         // Get reply count
-        const repliesRef = collection(db, "questions", questionDoc.id, "replies")
-        const repliesSnapshot = await getDocs(repliesRef)
+        const repliesSnapshot = await db.collection("questions").doc(questionDoc.id).collection("replies").get()
 
         return {
           id: questionDoc.id,
@@ -49,11 +47,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Question content required" }, { status: 400 })
     }
 
-    // Get user data
-    const userRef = doc(db, "users", userId)
-    const userDoc = await getDoc(userRef)
+    const db = getServerDb()
 
-    if (!userDoc.exists()) {
+    // Get user data
+    const userDoc = await db.collection("users").doc(userId).get()
+
+    if (!userDoc.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -68,8 +67,7 @@ export async function POST(request: Request) {
       timestamp: Date.now(),
     }
 
-    const questionsRef = collection(db, "questions")
-    const questionRef = await addDoc(questionsRef, questionData)
+    const questionRef = await db.collection("questions").add(questionData)
 
     return NextResponse.json({
       success: true,
