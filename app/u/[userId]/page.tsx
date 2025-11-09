@@ -1,53 +1,53 @@
-"use client"
+"use client";
 
-import SendMessageForm from "@/components/send-message-form"
-import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
-import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, limit } from "firebase/firestore"
+import SendMessageForm from "@/components/send-message-form";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SendMessagePage() {
-  const params = useParams()
-  const userId = params.userId as string
-  const [userData, setUserData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const params = useParams();
+  const userId = params.userId as string;
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const usersRef = collection(db, "users")
-        const q = query(usersRef, where("username", "==", userId), limit(1))
-        const snapshot = await getDocs(q)
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", userId), limit(1));
+        const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-          setNotFound(true)
-          return
+          setNotFound(true);
+          return;
         }
 
-        const userDoc = snapshot.docs[0]
+        const userDoc = snapshot.docs[0];
         setUserData({
           userId: userDoc.id,
           username: userDoc.data().username,
           profilePicture: userDoc.data().profilePicture,
-        })
+        });
       } catch (error) {
-        console.error("Error fetching user:", error)
-        setNotFound(true)
+        console.error("Error fetching user:", error);
+        setNotFound(true);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchUser()
-  }, [userId])
+    fetchUser();
+  }, [userId]);
 
   if (loading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <p className="text-white">Loading...</p>
       </div>
-    )
+    );
   }
 
   if (notFound || !userData) {
@@ -58,10 +58,14 @@ export default function SendMessagePage() {
           <p>This user does not exist</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <SendMessageForm userId={userData.userId} username={userData.username} profilePicture={userData.profilePicture} />
-  )
+    <SendMessageForm
+      userId={userData.userId}
+      username={userData.username}
+      profilePicture={userData.profilePicture}
+    />
+  );
 }
