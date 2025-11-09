@@ -1,7 +1,8 @@
 import InboxClient from "@/components/inbox-client"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
 
 export default async function InboxPage() {
   const cookieStore = await cookies()
@@ -11,9 +12,10 @@ export default async function InboxPage() {
     redirect("/auth")
   }
 
-  const userDoc = await adminDb.collection("users").doc(userId).get()
+  const userRef = doc(db, "users", userId)
+  const userDoc = await getDoc(userRef)
 
-  if (!userDoc.exists) {
+  if (!userDoc.exists()) {
     redirect("/auth")
   }
 

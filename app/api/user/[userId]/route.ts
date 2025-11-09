@@ -1,13 +1,15 @@
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   try {
     const { userId } = await params
 
-    const userDoc = await adminDb.collection("users").doc(userId).get()
+    const userRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userRef)
 
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 

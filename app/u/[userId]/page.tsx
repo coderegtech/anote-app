@@ -1,5 +1,6 @@
 import SendMessageForm from "@/components/send-message-form"
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { collection, query, where, limit, getDocs } from "firebase/firestore"
 import { notFound } from "next/navigation"
 
 export default async function SendMessagePage({
@@ -9,7 +10,9 @@ export default async function SendMessagePage({
 }) {
   const { userId } = await params
 
-  const usersSnapshot = await adminDb.collection("users").where("username", "==", userId).limit(1).get()
+  const usersRef = collection(db, "users")
+  const q = query(usersRef, where("username", "==", userId), limit(1))
+  const usersSnapshot = await getDocs(q)
 
   if (usersSnapshot.empty) {
     notFound()

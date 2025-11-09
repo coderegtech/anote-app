@@ -1,4 +1,5 @@
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, getDocs, addDoc } from "firebase/firestore"
 import { NextResponse } from "next/server"
 
 // Get replies for a question
@@ -6,12 +7,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ ques
   try {
     const { questionId } = await params
 
-    const repliesSnapshot = await adminDb
-      .collection("questions")
-      .doc(questionId)
-      .collection("replies")
-      .orderBy("timestamp", "asc")
-      .get()
+    const repliesRef = collection(db, "questions", questionId, "replies")
+    const q = query(repliesRef, orderBy("timestamp", "asc"))
+    const repliesSnapshot = await getDocs(q)
 
     const replies = repliesSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -42,7 +40,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ que
       timestamp: Date.now(),
     }
 
-    const replyRef = await adminDb.collection("questions").doc(questionId).collection("replies").add(replyData)
+    const repliesRef = collection(db, "questions", questionId, "replies")
+    const replyRef = await addDoc(repliesRef, replyData)
 
     return NextResponse.json({
       success: true,

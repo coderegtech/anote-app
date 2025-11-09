@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob"
 import { NextResponse } from "next/server"
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { doc, updateDoc } from "firebase/firestore"
 import { cookies } from "next/headers"
 
 export async function POST(request: Request) {
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
     })
 
     // Update user profile in Firestore
-    await adminDb.collection("users").doc(userId).update({
+    const userRef = doc(db, "users", userId)
+    await updateDoc(userRef, {
       profilePicture: blob.url,
       updatedAt: Date.now(),
     })

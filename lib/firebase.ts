@@ -15,15 +15,12 @@ let app: FirebaseApp
 let auth: Auth
 let db: Firestore
 
-if (typeof window !== "undefined") {
-  // Client-side initialization
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig)
-  } else {
-    app = getApps()[0]
-  }
-  auth = getAuth(app)
-  db = getFirestore(app)
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig)
+} else {
+  app = getApps()[0]
 }
+auth = getAuth(app)
+db = getFirestore(app)
 
 export { auth, db, signInAnonymously }

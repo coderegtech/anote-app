@@ -1,11 +1,14 @@
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, limit, getDocs, addDoc, doc, getDoc } from "firebase/firestore"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 // Get chat messages
 export async function GET() {
   try {
-    const messagesSnapshot = await adminDb.collection("globalChat").orderBy("timestamp", "desc").limit(100).get()
+    const chatRef = collection(db, "globalChat")
+    const q = query(chatRef, orderBy("timestamp", "desc"), limit(100))
+    const messagesSnapshot = await getDocs(q)
 
     const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -36,8 +39,10 @@ export async function POST(request: Request) {
     }
 
     // Get user data
-    const userDoc = await adminDb.collection("users").doc(userId).get()
-    if (!userDoc.exists) {
+    const userRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userRef)
+
+    if (!userDoc.exists()) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -52,7 +57,8 @@ export async function POST(request: Request) {
       timestamp: Date.now(),
     }
 
-    const messageRef = await adminDb.collection("globalChat").add(messageData)
+    const chatRef = collection(db, "globalChat")
+    const messageRef = await addDoc(chatRef, messageData)
 
     return NextResponse.json({
       success: true,

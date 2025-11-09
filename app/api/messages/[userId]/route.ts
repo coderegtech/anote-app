@@ -1,17 +1,14 @@
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, limit, getDocs, addDoc } from "firebase/firestore"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params
 
   try {
-    const messagesSnapshot = await adminDb
-      .collection("users")
-      .doc(userId)
-      .collection("messages")
-      .orderBy("timestamp", "desc")
-      .limit(50)
-      .get()
+    const messagesRef = collection(db, "users", userId, "messages")
+    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(50))
+    const messagesSnapshot = await getDocs(q)
 
     const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -42,7 +39,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ use
       read: false,
     }
 
-    const messageRef = await adminDb.collection("users").doc(userId).collection("messages").add(messageData)
+    const messagesRef = collection(db, "users", userId, "messages")
+    const messageRef = await addDoc(messagesRef, messageData)
 
     return NextResponse.json({ success: true, messageId: messageRef.id })
   } catch (error) {

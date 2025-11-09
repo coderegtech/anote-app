@@ -1,21 +1,25 @@
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
+import { collection, query, orderBy, limit, getDocs, addDoc, doc, getDoc } from "firebase/firestore"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 // Get all public questions
 export async function GET() {
   try {
-    const questionsSnapshot = await adminDb.collection("questions").orderBy("timestamp", "desc").limit(50).get()
+    const questionsRef = collection(db, "questions")
+    const q = query(questionsRef, orderBy("timestamp", "desc"), limit(50))
+    const questionsSnapshot = await getDocs(q)
 
     const questions = await Promise.all(
-      questionsSnapshot.docs.map(async (doc) => {
-        const questionData = doc.data()
+      questionsSnapshot.docs.map(async (questionDoc) => {
+        const questionData = questionDoc.data()
 
         // Get reply count
-        const repliesSnapshot = await adminDb.collection("questions").doc(doc.id).collection("replies").get()
+        const repliesRef = collection(db, "questions", questionDoc.id, "replies")
+        const repliesSnapshot = await getDocs(repliesRef)
 
         return {
-          id: doc.id,
+          id: questionDoc.id,
           ...questionData,
           replyCount: repliesSnapshot.size,
         }
@@ -46,8 +50,10 @@ export async function POST(request: Request) {
     }
 
     // Get user data
-    const userDoc = await adminDb.collection("users").doc(userId).get()
-    if (!userDoc.exists) {
+    const userRef = doc(db, "users", userId)
+    const userDoc = await getDoc(userRef)
+
+    if (!userDoc.exists()) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -62,7 +68,8 @@ export async function POST(request: Request) {
       timestamp: Date.now(),
     }
 
-    const questionRef = await adminDb.collection("questions").add(questionData)
+    const questionsRef = collection(db, "questions")
+    const questionRef = await addDoc(questionsRef, questionData)
 
     return NextResponse.json({
       success: true,
