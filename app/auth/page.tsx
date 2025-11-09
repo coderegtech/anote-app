@@ -101,6 +101,7 @@ export default function AuthPage() {
       if (profileFile) {
         const formData = new FormData();
         formData.append("file", profileFile);
+        formData.append("userId", userId);
 
         const uploadRes = await fetch("/api/upload-profile", {
           method: "POST",
