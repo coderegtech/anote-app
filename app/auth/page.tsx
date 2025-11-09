@@ -12,6 +12,7 @@ import {
   getDocs,
   query,
   setDoc,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { ArrowLeft, User } from "lucide-react";
@@ -81,14 +82,14 @@ export default function AuthPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setProfileFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    // Preview the image
+    const reader = new FileReader();
+    reader.onloadend = () => setProfilePicture(reader.result as string);
+    reader.readAsDataURL(file);
+
+    setProfileFile(file);
   };
 
   const completeSignup = async () => {
@@ -97,7 +98,13 @@ export default function AuthPage() {
       const userCredential = await signInAnonymously(auth);
       const userId = userCredential.user.uid;
 
-      let profileUrl = "";
+      await setDoc(doc(db, "users", userId), {
+        uid: userId,
+        username: username.trim(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
       if (profileFile) {
         const formData = new FormData();
         formData.append("file", profileFile);
@@ -108,19 +115,15 @@ export default function AuthPage() {
           body: formData,
         });
 
-        if (uploadRes.ok) {
-          const { url } = await uploadRes.json();
-          profileUrl = url;
-        }
-      }
+        if (!uploadRes.ok) throw new Error("Failed to upload file");
 
-      await setDoc(doc(db, "users", userId), {
-        uid: userId,
-        username: username.trim(),
-        profilePicture: profileUrl,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+        const { url } = await uploadRes.json();
+
+        await updateDoc(doc(db, "users", userId), {
+          profilePicture: url,
+          updatedAt: Date.now(),
+        });
+      }
 
       toast({
         title: "Welcome!",

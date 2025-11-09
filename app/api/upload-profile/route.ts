@@ -9,6 +9,8 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File;
     const userId = formData.get("userId") as string;
 
+    console.log(`file: ${file}, userId: ${userId}`);
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
