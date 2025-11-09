@@ -16,9 +16,10 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
   where,
 } from "firebase/firestore";
-import { Copy, LogOut, MessageSquare, Trash2, User } from "lucide-react";
+import { Copy, LogOut, MessageSquare, Plus, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import GlobalChat from "./global-chat";
@@ -246,6 +247,54 @@ export default function InboxClient({
       </div>
     );
   };
+  const [profile, setProfile] = useState<string>("");
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Preview the image
+    const reader = new FileReader();
+    reader.onloadend = () => setProfile(reader.result as string);
+    reader.readAsDataURL(file);
+
+    setProfileFile(file);
+    await uploadProfile(file);
+  };
+
+  const uploadProfile = async (file: File) => {
+    try {
+      setIsUploading(true);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", userId);
+
+      const res = await fetch("/api/upload-profile", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Failed to upload file");
+
+      const { url } = await res.json();
+
+      await updateDoc(doc(db, "users", userId), {
+        profilePicture: url,
+        updatedAt: Date.now(),
+      });
+
+      setProfile(url);
+      console.log("✅ Profile uploaded successfully:", url);
+    } catch (error) {
+      console.error("Upload failed:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // PLAY tab
   const PlaySection = () => (
@@ -253,14 +302,29 @@ export default function InboxClient({
       <Card className="max-w-sm mx-auto bg-gradient-to-b from-pink-500 to-red-400 border-0 shadow-xl overflow-hidden rounded-2xl">
         <div className="p-8 flex flex-col items-center justify-center min-h-[240px] text-center space-y-4">
           <Avatar className="w-20 h-20">
-            <AvatarImage
-              src={profilePicture || "/placeholder.svg"}
-              alt={username}
-            />
-            <AvatarFallback className="bg-white/20 backdrop-blur-sm">
-              <User className="text-white w-10 h-10" />
+            <AvatarImage src={profile || profilePicture} alt={username} />
+            <AvatarFallback
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-white/20 backdrop-blur-sm cursor-pointer"
+            >
+              {isUploading ? (
+                <span className="text-white text-sm">Uploading...</span>
+              ) : (
+                <>
+                  <User className="text-white w-10 h-10" />
+                  <Plus className="size-5 text-white" />
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
             </AvatarFallback>
           </Avatar>
+
           <EditableQuestion />
         </div>
       </Card>

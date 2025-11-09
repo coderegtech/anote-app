@@ -5,14 +5,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await request.json();
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+    const userId = formData.get("userId") as string;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
