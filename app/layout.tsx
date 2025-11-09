@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     ],
     apple: "/icon-512.jpg",
   },
+    generator: 'v0.app'
 };
 
 export const viewport: Viewport = {
