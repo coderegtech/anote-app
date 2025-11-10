@@ -1,4 +1,4 @@
-# AnonNote - Anonymous Messaging App
+# Anote - Anonymous Note & Messaging App
 
 *Automatically synced with your [v0.app](https://v0.app) deployments*
 
