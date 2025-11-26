@@ -139,11 +139,11 @@ export default function SendMessageForm({
         </form>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md space-y-4 animate-bounce">
         <Button
           onClick={() => router.push("/auth")}
           variant="outline"
-          className="w-full h-14 rounded-full bg-white text-black hover:bg-white font-bold text-lg shadow-2xl border-0"
+          className="w-full h-14 rounded-full bg-white text-black hover:bg-white font-bold text-lg shadow-2xl border-0 animate-pulse"
         >
           Get your own messages!
         </Button>

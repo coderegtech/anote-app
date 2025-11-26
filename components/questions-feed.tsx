@@ -115,6 +115,8 @@ export default function QuestionsFeed({
         username: doc.data().username,
         timestamp: doc.data().timestamp,
       }));
+
+      console.log("replies: ", reps);
       setReplies(reps);
     });
 
@@ -211,7 +213,10 @@ export default function QuestionsFeed({
                   <span>
                     {new Date(question.timestamp).toLocaleDateString()}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span
+                    onClick={() => handleQuestionClick(question)}
+                    className="flex items-center gap-1"
+                  >
                     <Send className="w-3 h-3" />
                     {question.replyCount} replies
                   </span>
@@ -222,8 +227,8 @@ export default function QuestionsFeed({
         ))}
 
         {selectedQuestion && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-4 rounded-2xl shadow-lg w-[90%] max-w-md relative">
+          <div className="fixed inset-0  bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className=" overflow-hidden w-full bg-white p-4 rounded-2xl shadow-lg  relative">
               <button
                 onClick={() => setSelectedQuestion(null)}
                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -252,11 +257,30 @@ export default function QuestionsFeed({
                   </div>
                 </div>
               </div>
-              <div className="h-40 overflow-y-auto mb-4">
-                <p className="text-center text-gray-400 text-sm py-4">
-                  No replies yet. Be the first!
-                </p>
+
+              <div className="max-h-96 h-[calc(50vh)] overflow-y-auto">
+                {selectedQuestion && replies.length === 0 ? (
+                  <div className="h-40 overflow-y-auto mb-4">
+                    <p className="text-center text-gray-400 text-sm py-4">
+                      No replies yet. Be the first!
+                    </p>
+                  </div>
+                ) : (
+                  replies.map((reply) => (
+                    <div
+                      key={reply.id}
+                      className="p-3 bg-gray-50 rounded-xl mb-2"
+                    >
+                      <p className="font-semibold text-sm">@{reply.username}</p>
+                      <p className="text-gray-700 mt-1">{reply.content}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(reply.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
+
               <form onSubmit={handlePostReply} className="space-y-2">
                 <Input
                   value={replyUsername}

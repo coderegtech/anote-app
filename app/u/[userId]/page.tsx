@@ -44,7 +44,7 @@ export default function SendMessagePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-pink-500 to-red-400 flex items-center justify-center">
         <p className="text-white">Loading...</p>
       </div>
     );
@@ -52,7 +52,7 @@ export default function SendMessagePage() {
 
   if (notFound || !userData) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center px-6">
+      <div className="min-h-screen bg-gradient-to-b from-pink-500 to-red-400 flex items-center justify-center px-6">
         <div className="text-center text-white">
           <h1 className="text-3xl font-bold mb-2">User Not Found</h1>
           <p>This user does not exist</p>
