@@ -50,7 +50,7 @@ AnonNote is a mobile-optimized anonymous messaging platform that allows you to:
 - Share link on social media
 - Customize your message prompt
 
-**Screenshot**: ![Play Tab Interface](#)
+**Screenshot**: ![Play Tab Interface](screenshots/04-inbox.png)
 
 ### 2. Inbox Tab (Received Messages)
 

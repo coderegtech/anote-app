@@ -18,6 +18,12 @@ For detailed documentation, please visit the [docs](./docs/) folder:
 
 A modern anonymous messaging application built with Next.js 16, Firebase, and Vercel Blob. This repository stays in sync with your deployed chats on [v0.app](https://v0.app).
 
+## Screenshots
+
+| Welcome | Username | Play tab | Public message page |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/01-welcome.png" width="180" alt="Welcome"> | <img src="docs/screenshots/02-username.png" width="180" alt="Choose a username"> | <img src="docs/screenshots/04-inbox.png" width="180" alt="Play tab with share link"> | <img src="docs/screenshots/05-send-message.png" width="180" alt="Send an anonymous message"> |
+
 ## Features
 
 - **Anonymous Authentication**: Sign up anonymously with Firebase Auth
